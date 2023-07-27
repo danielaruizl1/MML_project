@@ -10,11 +10,12 @@ import pandas as pd
 import numpy as np
 import argparse
 import torch
+import wandb
 import os
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--n_epochs", type=int, default=200, help="number of epochs of training")
-parser.add_argument("--batch_size", type=int, default=8, help="size of the batches")
+parser.add_argument("--n_epochs", type=int, default=50, help="number of epochs of training")
+parser.add_argument("--batch_size", type=int, default=1024, help="size of the batches")
 parser.add_argument("--lr", type=float, default=0.0002, help="adam: learning rate")
 parser.add_argument("--b1", type=float, default=0.5, help="adam: decay of first order momentum of gradient")
 parser.add_argument("--b2", type=float, default=0.999, help="adam: decay of first order momentum of gradient")
@@ -24,8 +25,15 @@ parser.add_argument("--n_classes", type=int, default=7, help="number of classes 
 parser.add_argument("--img_height", type=int, default=450, help="size of height image dimension")
 parser.add_argument("--img_widht", type=int, default=600, help="size of widht image dimension")
 parser.add_argument("--channels", type=int, default=3, help="number of image channels")
-parser.add_argument("--sample_interval", type=int, default=400, help="interval between image sampling")
+parser.add_argument("--sample_interval", type=int, default=10, help="interval between image sampling")
 opt = parser.parse_args()
+
+# Start wandb configs
+args_dict = vars(opt)
+wandb.init(
+    project='MML_project',
+    config=args_dict
+)
 
 os.makedirs("images", exist_ok=True)
 img_shape = (opt.channels, opt.img_height, opt.img_widht)
@@ -120,9 +128,13 @@ training_data = HAM10000_Dataset(df_train)
 validation_data = HAM10000_Dataset(df_val)
 test_data = HAM10000_Dataset(df_test)
 
+print("Training data: ", len(training_data))
+print("Validation data: ", len(validation_data))
+print("Test data: ", len(test_data))
+
 train_dataloader = DataLoader(training_data, batch_size=opt.batch_size, shuffle=True)
-val_dataloader = DataLoader(validation_data, batch_size=opt.batch_size, shuffle=True)
-test_dataloader = DataLoader(test_data, batch_size=opt.batch_size, shuffle=True)
+val_dataloader = DataLoader(validation_data, batch_size=len(validation_data), shuffle=True)
+test_dataloader = DataLoader(test_data, batch_size=1, shuffle=True)
 
 # Loss functions
 adversarial_loss = torch.nn.MSELoss()
@@ -155,7 +167,6 @@ def sample_image(n_row, batches_done):
     labels = Variable(LongTensor(labels))
     gen_imgs = generator(z, labels)
     save_image(gen_imgs.data, "images/%d.png" % batches_done, nrow=n_row, normalize=True)
-
 
 def val():
     generator.eval()
@@ -243,7 +254,7 @@ def test():
 #  Training
 for epoch in range(opt.n_epochs):
     for i, (imgs, labels) in enumerate(train_dataloader):
-        breakpoint()
+    
         batch_size = imgs.shape[0]
 
         # Adversarial ground truths
@@ -295,13 +306,23 @@ for epoch in range(opt.n_epochs):
 
         batches_done = epoch * len(train_dataloader) + i
         if batches_done % opt.sample_interval == 0:
-            sample_image(n_row=10, batches_done=batches_done)
+            sample_image(n_row=opt.n_classes, batches_done=batches_done)
 
         # Validation at the end of each epoch
         val_loss = val()
         print(f"Validation Loss after Epoch {epoch}: {val_loss}")
 
+        log_dict = {}
+        log_dict['d_loss'] = d_loss.item()
+        log_dict['g_loss'] = g_loss.item()
+        log_dict['val_loss'] = val_loss
+        log_dict['Epoch'] = epoch
+        wandb.log(log_dict)
+
 # Testing after the training is complete
 test_loss = test()
 print(f"Test Loss: {test_loss}")
+wandb.log({'test_loss': test_loss})
+
+wandb.finish()
 
