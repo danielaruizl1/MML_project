@@ -277,6 +277,7 @@ for epoch in range(opt.n_epochs):
 
         # Loss measures generator's ability to fool the discriminator
         validity = discriminator(gen_imgs, gen_labels)
+        breakpoint()
         g_loss = adversarial_loss(validity, valid)
 
         g_loss.backward()
