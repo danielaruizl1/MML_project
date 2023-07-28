@@ -4,3 +4,5 @@ images/
 wandb/
 images_vae/
 vae50/
+images_cgan2/
+images_gan/

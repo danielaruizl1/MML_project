@@ -15,8 +15,8 @@ import os
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--n_epochs", type=int, default=20, help="number of epochs of training")
-parser.add_argument("--batch_size", type=int, default=8, help="size of the batches")
-parser.add_argument("--lr", type=float, default=0.0002, help="adam: learning rate")
+parser.add_argument("--batch_size", type=int, default=1024, help="size of the batches")
+parser.add_argument("--lr", type=float, default=0.002, help="adam: learning rate")
 parser.add_argument("--b1", type=float, default=0.5, help="adam: decay of first order momentum of gradient")
 parser.add_argument("--b2", type=float, default=0.999, help="adam: decay of first order momentum of gradient")
 parser.add_argument("--n_cpu", type=int, default=8, help="number of cpu threads to use during batch generation")
@@ -26,6 +26,7 @@ parser.add_argument("--img_height", type=int, default=450, help="size of height 
 parser.add_argument("--img_widht", type=int, default=600, help="size of widht image dimension")
 parser.add_argument("--channels", type=int, default=3, help="number of image channels")
 parser.add_argument("--sample_interval", type=int, default=10, help="interval between image sampling")
+parser.add_argument("--save_folder", type=str, default="images_cgan2", help="interval between image sampling")
 opt = parser.parse_args()
 
 # Start wandb configs
@@ -35,7 +36,7 @@ wandb.init(
     config=args_dict
 )
 
-os.makedirs("images", exist_ok=True)
+os.makedirs(opt.save_folder, exist_ok=True)
 img_shape = (opt.channels, opt.img_height, opt.img_widht)
 
 class Generator(nn.Module):
@@ -166,7 +167,7 @@ def sample_image(n_row, batches_done):
     labels = np.array([num for _ in range(n_row) for num in range(n_row)])
     labels = Variable(LongTensor(labels))
     gen_imgs = generator(z, labels)
-    save_image(gen_imgs.data, "images/%d.png" % batches_done, nrow=n_row, normalize=True)
+    save_image(gen_imgs.data, f"{opt.save_folder}/{batches_done}.png", nrow=n_row, normalize=True)
 
 def val():
     generator.eval()
@@ -314,6 +315,8 @@ for epoch in range(opt.n_epochs):
 
         log_dict = {}
         log_dict['d_loss'] = d_loss.item()
+        log_dict['d_real_loss'] = d_real_loss.item()
+        log_dict['d_fake_loss'] = d_fake_loss.item()
         log_dict['g_loss'] = g_loss.item()
         log_dict['val_loss'] = val_loss
         log_dict['Epoch'] = epoch
