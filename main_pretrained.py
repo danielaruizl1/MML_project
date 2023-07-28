@@ -155,7 +155,7 @@ def sample_image(n_row, batches_done):
     breakpoint()
     z = Variable(FloatTensor(np.random.normal(0, 1, (n_row ** 2, opt.latent_dim))))
     gen_imgs = generator(z)
-    save_image(gen_imgs.data, "images/%d.png" % batches_done, nrow=n_row, normalize=True)
+    save_image(gen_imgs.data, "images_gan/%d.png" % batches_done, nrow=n_row, normalize=True)
 
 def val():
     generator.eval()
