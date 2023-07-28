@@ -14,8 +14,8 @@ import wandb
 import os
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--n_epochs", type=int, default=50, help="number of epochs of training")
-parser.add_argument("--batch_size", type=int, default=1024, help="size of the batches")
+parser.add_argument("--n_epochs", type=int, default=20, help="number of epochs of training")
+parser.add_argument("--batch_size", type=int, default=8, help="size of the batches")
 parser.add_argument("--lr", type=float, default=0.0002, help="adam: learning rate")
 parser.add_argument("--b1", type=float, default=0.5, help="adam: decay of first order momentum of gradient")
 parser.add_argument("--b2", type=float, default=0.999, help="adam: decay of first order momentum of gradient")
@@ -109,7 +109,7 @@ df_data=pd.read_csv(csv_path).set_index('image_id')
 df_data.dx=df_data.dx.astype('category',copy=True)
 df_data['label']=df_data.dx.cat.codes # Create a new column with the encoded categories
 df_data['lesion_type']= df_data.dx.map(labels_dict) # Create a new column with the lesion type
-df_data['path'] = "data/HAM10000_images/"+df_data.index + '.jpg' # Create a new column with the path to the image
+df_data['path'] = "data/resized/"+df_data.index + '.jpg' # Create a new column with the path to the image
 
 # Save relation between label and lesion_type
 label_list = df_data['label'].value_counts().keys().tolist()
@@ -133,7 +133,7 @@ print("Validation data: ", len(validation_data))
 print("Test data: ", len(test_data))
 
 train_dataloader = DataLoader(training_data, batch_size=opt.batch_size, shuffle=True)
-val_dataloader = DataLoader(validation_data, batch_size=len(validation_data), shuffle=True)
+val_dataloader = DataLoader(validation_data, batch_size=opt.batch_size, shuffle=True)
 test_dataloader = DataLoader(test_data, batch_size=1, shuffle=True)
 
 # Loss functions
@@ -277,7 +277,6 @@ for epoch in range(opt.n_epochs):
 
         # Loss measures generator's ability to fool the discriminator
         validity = discriminator(gen_imgs, gen_labels)
-        breakpoint()
         g_loss = adversarial_loss(validity, valid)
 
         g_loss.backward()

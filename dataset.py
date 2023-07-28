@@ -3,6 +3,7 @@ import torchvision.transforms as transforms
 from torch.utils.data import Dataset
 import matplotlib.pyplot as plt
 from skimage.io import imread
+from PIL import Image
 import seaborn as sns
 import pandas as pd
 import os
@@ -24,7 +25,7 @@ df_data=pd.read_csv(csv_path).set_index('image_id')
 df_data.dx=df_data.dx.astype('category',copy=True)
 df_data['label']=df_data.dx.cat.codes # Create a new column with the encoded categories
 df_data['lesion_type']= df_data.dx.map(labels_dict) # Create a new column with the lesion type
-df_data['path'] = "data/HAM10000_images/"+df_data.index + '.jpg' # Create a new column with the path to the image
+df_data['path'] = "data/resized/"+df_data.index + '.jpg' # Create a new column with the path to the image
 
 # Save relation between label and lesion_type
 label_list = df_data['label'].value_counts().keys().tolist()
@@ -80,6 +81,32 @@ plt.bar(sex.keys().tolist(), sex.tolist(), color=sns.color_palette("husl", 9))
 plt.title("Patient Sex")
 plt.xticks(rotation=30)
 plt.savefig('sex_histogram.png', dpi=300)
+
+def resize_images_in_folder(folder_path, desired_size):
+
+    for filename in os.listdir(folder_path):
+        filepath = os.path.join(folder_path, filename)
+
+        try:
+            # Open the image using PIL
+            img = Image.open(filepath)
+
+            # Resize the image
+            resized_img = img.resize(desired_size, Image.ANTIALIAS)
+
+            # Save the resized image 
+            new_folder = os.path.join("data","resized")
+            os.makedirs(new_folder, exist_ok=True)
+            new_filepath = os.path.join(new_folder, filename)
+            resized_img.save(new_filepath)
+
+            print(f"Resized {filename} to {desired_size}")
+
+        except Exception as e:
+            print(f"Error resizing {filename}: {e}")
+
+# Call the function to resize images in the folder
+# resize_images_in_folder("data/HAM10000_images", (128,128))
 
 class HAM10000_Dataset(Dataset):
 
