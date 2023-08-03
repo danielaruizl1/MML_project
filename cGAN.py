@@ -93,6 +93,13 @@ class Discriminator(nn.Module):
         validity = self.model(d_in)
         return validity
 
+num_parametros_gen = sum(p.numel() for p in Generator.parameters(Generator))
+print("Número total de parámetros del generador:", num_parametros_gen)
+num_parametros_dis = sum(p.numel() for p in Discriminator.parameters(Discriminator))
+print("Número total de parámetros del discriminador:", num_parametros_dis)
+
+breakpoint()
+
 # Categories of the diferent lesions
 labels_dict = {
     'nv': 'Melanocytic nevi',
